@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Event Manager - FestHub</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e3f6fd 40%, #fffbe6 70%, #ffe3e3 100%);
+            color: #222;
+            overflow-x: hidden;
+        }
+
+        #threejs-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #fffbe6 0%, #e3f6fd 60%, #ffe3e3 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #ffd700;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(33, 150, 243, 0.10);
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2196f3;
+            text-shadow: 0 0 10px rgba(33, 150, 243, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links li a {
+            color: #2196f3;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+            background: linear-gradient(90deg, #e3f6fd 0%, #fffbe6 100%);
+        }
+
+        .nav-links li a:hover {
+            color: #fff;
+            background: linear-gradient(90deg, #2196f3 60%, #ffd700 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px #ffd70044;
+        }
+
+        .nav-links li a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(100, 255, 218, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-links li a:hover::before {
+            left: 100%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section {
+            min-height: 100vh;
+            padding: 6rem 0 4rem 0;
+            display: none;
+            background: linear-gradient(135deg, #fffbe6 0%, #e3f6fd 60%, #ffe3e3 100%);
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(255,215,0,0.09);
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #2196f3, #bb86fc, #03dac6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(100, 255, 218, 0.3)); }
+            to { filter: drop-shadow(0 0 40px rgba(100, 255, 218, 0.6)); }
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+            max-width: 600px;
+        }
+
+        .quote {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: #64ffda;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        }
+
+        .home-tabs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .tab-card {
+            background: #fff;
+            border: 2px solid #e3f6fd;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(33,150,243,0.07);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #2196f3, #ffd700);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tab-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tab-card:hover {
+            transform: translateY(-10px);
+            border-color: #ffd700;
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.15);
+        }
+
+        .tab-card h3 {
+            color: #2196f3;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .tab-card p {
+            opacity: 0.85;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 24px rgba(33,150,243,0.07);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #2196f3;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(33,150,243,0.12);
+        }
+
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .event-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(33,150,243,0.07);
+        }
+
+        .event-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(33,150,243,0.07), rgba(187,134,252,0.07));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .event-card:hover::after {
+            opacity: 1;
+        }
+
+        .event-card:hover {
+            transform: scale(1.02);
+            border-color: #2196f3;
+        }
+
+        .event-tag {
+            display: inline-block;
+            background: linear-gradient(90deg, #2196f3 60%, #bb86fc 100%);
+            color: #fff;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+
+        .calendar-day {
+            background: #fff;
+            padding: 1rem;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            background: #e3f6fd;
+        }
+
+        .calendar-day.has-event {
+            border-left: 4px solid #64ffda;
+        }
+
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .day-event {
+            font-size: 0.7rem;
+            background: rgba(100, 255, 218, 0.3);
+            color: #64ffda;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            margin-bottom: 0.2rem;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-item {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(33,150,243,0.07);
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            border-color: #2196f3;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #2196f3;
+            filter: drop-shadow(0 0 8px #bb86fc);
+        }
+
+        .aim-timeline {
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .aim-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #64ffda, #bb86fc);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+
+        .timeline-item:nth-child(odd) {
+            flex-direction: row-reverse;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 0 2rem;
+            position: relative;
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::before {
+            right: -20px;
+            border-left-color: rgba(100, 255, 218, 0.2);
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::before {
+            left: -20px;
+            border-right-color: rgba(100, 255, 218, 0.2);
+        }
+
+        .contact-section {
+            background: #fff;
+            border: 1px solid #e3f6fd;
+            border-radius: 15px;
+            padding: 3rem;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .contact-item {
+            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e3f6fd;
+            border-radius: 10px;
+        }
+
+        .contact-item h4 {
+            color: #64ffda;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #64ffda, #bb86fc);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(100, 255, 218, 0.3);
+        }
+
+        .section-title {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, #2196f3, #ffd700, #bb86fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mobile-nav {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-nav {
+                display: block;
+                background: none;
+                border: none;
+                color: #64ffda;
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .home-tabs {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-item {
+                flex-direction: column !important;
+            }
+
+            .timeline-content {
+                margin: 1rem 0;
+            }
+
+            .aim-timeline::before {
+                left: 20px;
+            }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(100, 255, 218, 0.1);
+            z-index: 999;
+        }
+
+        .scroll-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #64ffda, #bb86fc);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .shape:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            top: 60%;
+            right: 10%;
+            animation-delay: -3s;
+        }
+
+        .shape:nth-child(3) {
+            bottom: 20%;
+            left: 30%;
+            animation-delay: -6s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="threejs-canvas"></canvas>
+    
+    <div class="scroll-indicator">
+        <div class="scroll-progress"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <img src="team.jpg" alt="UIT RGPV Shivpuri Logo" style="height:40px;width:40px;border-radius:50%;box-shadow:0 2px 8px #ffd70044;">
+            FestHub
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" onclick="showSection('home')">Home</a></li>
+            <li><a href="#" onclick="showSection('events')">Events</a></li>
+            <li><a href="#" onclick="showSection('calendar')">Calendar</a></li>
+            <li><a href="#" onclick="showSection('features')">Features</a></li>
+            <li><a href="#" onclick="showSection('aims')">Aims</a></li>
+            <li><a href="#" onclick="showSection('about')">About Author</a></li>
+        </ul>
+        <button class="mobile-nav">☰</button>
+    </nav>
+
+    <div class="floating-shapes">
+        <div class="shape">🎯</div>
+        <div class="shape">🏆</div>
+        <div class="shape">🎪</div>
+    </div>
+
+    <div class="container">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                    <img src="https://img.icons8.com/color/96/000000/graduation-cap.png" alt="College Logo" style="margin-bottom: 1rem;">
+                    <h1>College Event Manager</h1>
+                    <p class="quote">"Excellence is never an accident."</p>
+                    <p>Smart platform for events, attendance, and routines.<br>
+                    <img src="https://img.icons8.com/color/48/000000/qr-code.png" alt="QR Attendance" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/face-id.png" alt="Face Recognition" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/bluetooth.png" alt="Bluetooth" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/wifi.png" alt="Wi-Fi" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Calendar" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/idea.png" alt="Suggestions" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/trophy.png" alt="Trophy" style="vertical-align:middle;"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFSElEQVR4nO2YSVMbVxSFtbe61ZqSVQhm9iBAJGt7kbKL0VgISSCDJNglfyFO4kBMiJlk5nkGCXCMTWxjBhnj5D+AncomFDNq2RH7m7qvmRrcg5qyi6R0qs721Hffu33fe61SRRVVVFH975T+gs03zwVfps2yu6bp4K7p6c7CpantPNV/QRkBtto8x0LaLAupz4NgerYDl55sw8WpLUh5tHlXdfZXnhWA34Lkh5uQMLGeqzqrMnNtIwif+GADEsbXXnx0MLXHl0+7fS8p98gu7RrapUsHFpiS3hM9nTbDhsXh1yHOt/qP0nxFosr81bTHB7R7BDSuIdCUDgBT0gfaWz2gdXbxejp1OhgWg4/3r0Hs6Oo7pfkRi6yMcDjoijvA4Gg96GkybUTgz4+uQezwakBpfsTCbRUL1xe1gc7WfNDTOCol4CFmaCVHaX7EotzDYbFwvb0FDLYmXk/jqBSC/2xgpfK0+RGJdg2GJcLBaPXyehqFoxKnTZxvNRw7shrGtjm68qfNly1uGoiEF94Ho7XuoKfPWr4KR5l4eD0YLDU5ZzWfCEeZULjRUsvradQXgbfXzQG2yzzPLmcEQrto83xoyTzPdqbPv7122nxFwlGG00BvawwbrN4wbuvxlfky8C7ZHAi9ygiEIGM+BGaeWcArBjp9LriYOreVFGn+B1X6LHvVPMeGjsNywHuePeoga5phr6jOgkyB7WTzbDAkDMtd7tJm0MEj3mHTZ7cSPzggXe67Trl9XbR7dJnyjO5y95XBJdrR1kvZvdnpM8EFadggpD0Pkksez9M7i5SzKVdd1NPHzx9aol2DnXTJ4IlvRrao8vFkqmzsFeXxAznuPaPkyKfdw6Ap7QfK3giffN0fASxnE/EOufCZnu2A/pshUDvagXYNHebj4eYaJAecpmRgkSod4H0zklKXjV9Vl/lD74XH8FvdQFlqIK7h94hgj/ryU84xtX+A2uoFuqTvBDxDDrl+YEp6WcbZfUX2yovCuwaBLuoAKv8XuOD7KyJYnp9wt9ak4T/hnKUOKGe3AHwfMLd68bBjqeJe6W+GKhtbEIMn2+poAyqvCi4/Xo8IluffOF+cXINzN++RRRGBB62zG7TFnYui8LRn/JoUPIZr7M1cARHCEuB9T+17C9T51UAXtYrDk9O6E/SO9q+EV9/j75aCx3BSQO5dRbDoC+jHh1ZjAY4WSXg8sXVFbR3CO+AeXZaCx3CNrQno3J8UwRI/4pyyZ/WNn0GDBUjCt4PO0bokvAPukbAUPIYztkagcyoVwRJPbh44eXITKCzA3iwJTx44jtawyA5Iw2M4U3gf6JwKRbDED/mm8qq4AiTg9Y5W0DtaQKQAaXgMxwI02T+KwqYIwKKTft33BjEpwNYkC15vbxYuQA48hmutXtBk35Fc2ffBEj/gnLhnHAjYlnLgDfYmsQKk4TFca20ATdYPimCJJw6dMLFBBgLuqhx4fC8IFyADHsO1BfXAZH2vCBYf+sdN51SSAuTAG2yNwgXIm8PtoCuoAybzO0WwCWPrEH/MdE4FaUs58PhaEy5ABjwZZZZaUoAS2Hg/5zj/2oFxIGBbyoE3FnrFCpCGx3CdpQaYzNuKYON8fJ/3YQF3SFvKgTdaG0QKkDmHdTfvgTbzW0Ww+JOL71UyELAt5cDjY1+4AGfPipxRprfUgDbzNsT2vokYNnaE75iO18BkYwH1suCN1rq/BQvQOnuymOKuFalpoC+oB11uBXxa1gax3W9kw+LvxX1/jr8aO16DobwTtDeqQFfolQVvtNRlChYQVVRRRaX62PoXCT8X78jSOoUAAAAASUVORK5CYII=" alt="conference-background-selected" alt="Team" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/analytics.png" alt="Analytics" style="vertical-align:middle;"> <img src="https://img.icons8.com/color/48/000000/medal.png" alt="Medal" style="vertical-align:middle;">
+                    </p>
+                    <div class="home-tabs">
+                        <div class="tab-card" onclick="showSection('events')">
+                            <h3>🎭 Events</h3>
+                            <p>Discover upcoming festivals, competitions, and cultural events. Register and participate in exciting college activities.</p>
+                        </div>
+                        <div class="tab-card" onclick="showSection('features')">
+                            <h3>⚡ Features</h3>
+                            <p>Explore our advanced features: smart attendance, real-time display, personalized academic suggestions, and daily routine generation.</p>
+                        </div>
+                        <div class="tab-card" onclick="showSection('aims')">
+                            <h3>🎯 Aims</h3>
+                            <p>Learn about our mission to revolutionize college event management and enhance student experiences.</p>
+                        </div>
+                        <div class="tab-card" onclick="showSection('calendar')">
+                            <h3>📅 Calendar</h3>
+                            <p>Stay updated with our interactive calendar featuring holidays, festivals, competitions, and important dates.</p>
+                        </div>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Events Section -->
+        <section id="events" class="section">
+            <h2 class="section-title">Events</h2>
+            <div style="display: flex; justify-content: center; margin-bottom: 2rem; gap: 1rem;">
+                <button class="btn" onclick="showEventTab('arts')"><img src='https://img.icons8.com/color/32/paint-palette.png' style='vertical-align:middle;'> Arts</button>
+                <button class="btn" onclick="showEventTab('tech')"><img src='https://img.icons8.com/color/32/laptop.png' style='vertical-align:middle;'> Tech</button>
+                <button class="btn" onclick="showEventTab('sports')"><img src='https://img.icons8.com/color/32/trophy.png' style='vertical-align:middle;'> Sports</button>
+            </div>
+            <div id="event-tabs">
+                <div id="arts-tab" class="event-grid event-tab" style="display:block;">
+                    <div class="event-card">
+                        <div class="event-tag"><img src='https://img.icons8.com/color/24/paint-palette.png' style='vertical-align:middle;'> Arts</div>
+                        <h3>Creative Arts Festival</h3>
+                        <p><strong>Date:</strong> May 1-3, 2025</p>
+                        <p><strong>Prize:</strong> ₹40,000</p>
+                        <img src="https://img.icons8.com/color/96/paint-palette.png" alt="Arts" style="margin:1rem auto;display:block;">
+                        <button class="btn">Register</button>
+                    </div>
+                </div>
+                <div id="tech-tab" class="event-grid event-tab" style="display:none;">
+                    <div class="event-card">
+                        <div class="event-tag"><img src='https://img.icons8.com/color/24/laptop.png' style='vertical-align:middle;'> Tech</div>
+                        <h3>CodeFest Hackathon</h3>
+                        <p><strong>Date:</strong> April 5-6, 2025</p>
+                        <p><strong>Prize:</strong> ₹1,00,000</p>
+                        <img src="https://img.icons8.com/color/96/laptop.png" alt="Tech" style="margin:1rem auto;display:block;">
+                        <button class="btn">Register</button>
+                    </div>
+                </div>
+                <div id="sports-tab" class="event-grid event-tab" style="display:none;">
+                    <div class="event-card">
+                        <div class="event-tag"><img src='https://img.icons8.com/color/24/trophy.png' style='vertical-align:middle;'> Sports</div>
+                        <h3>Inter-College Olympics</h3>
+                        <p><strong>Date:</strong> February 20-25, 2025</p>
+                        <p><strong>Prize:</strong> ₹75,000</p>
+                        <img src="https://img.icons8.com/color/96/trophy.png" alt="Sports" style="margin:1rem auto;display:block;">
+                        <button class="btn">Register</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calendar Section -->
+        <section id="calendar" class="section">
+            <h2 class="section-title">Event Calendar</h2>
+            <div class="card">
+                <h3>March 2025</h3>
+                <div class="calendar-grid">
+                    <div class="calendar-day"><strong>Sun</strong></div>
+                    <div class="calendar-day"><strong>Mon</strong></div>
+                    <div class="calendar-day"><strong>Tue</strong></div>
+                    <div class="calendar-day"><strong>Wed</strong></div>
+                    <div class="calendar-day"><strong>Thu</strong></div>
+                    <div class="calendar-day"><strong>Fri</strong></div>
+                    <div class="calendar-day"><strong>Sat</strong></div>
+                    
+                    <div class="calendar-day"><span class="day-number">1</span></div>
+                    <div class="calendar-day"><span class="day-number">2</span></div>
+                    <div class="calendar-day"><span class="day-number">3</span></div>
+                    <div class="calendar-day"><span class="day-number">4</span></div>
+                    <div class="calendar-day"><span class="day-number">5</span></div>
+                    <div class="calendar-day"><span class="day-number">6</span></div>
+                    <div class="calendar-day"><span class="day-number">7</span></div>
+                    
+                    <div class="calendar-day has-event">
+                        <span class="day-number">8</span>
+                        <div class="day-event">Women's Day</div>
+                    </div>
+                    <div class="calendar-day"><span class="day-number">9</span></div>
+                    <div class="calendar-day"><span class="day-number">10</span></div>
+                    <div class="calendar-day"><span class="day-number">11</span></div>
+                    <div class="calendar-day"><span class="day-number">12</span></div>
+                    <div class="calendar-day has-event">
+                        <span class="day-number">13</span>
+                        <div class="day-event">Holi</div>
+                    </div>
+                    <div class="calendar-day"><span class="day-number">14</span></div>
+                    
+                    <div class="calendar-day has-event">
+                        <span class="day-number">15</span>
+                        <div class="day-event">Spring Carnival</div>
+                    </div>
+                    <div class="calendar-day has-event">
+                        <span class="day-number">16</span>
+                        <div class="day-event">Spring Carnival</div>
+                    </div>
+                    <div class="calendar-day has-event">
+                        <span class="day-number">17</span>
+                        <div class="day-event">Spring Carnival</div>
+                    </div>
+                    <div class="calendar-day"><span class="day-number">18</span></div>
+                    <div class="calendar-day"><span class="day-number">19</span></div>
+                    <div class="calendar-day"><span class="day-number">20</span></div>
+                    <div class="calendar-day"><span class="day-number">21</span></div>
+                    
+                    <div class="calendar-day"><span class="day-number">22</span></div>
+                    <div class="calendar-day"><span class="day-number">23</span></div>
+                    <div class="calendar-day"><span class="day-number">24</span></div>
+                    <div class="calendar-day"><span class="day-number">25</span></div>
+                    <div class="calendar-day"><span class="day-number">26</span></div>
+                    <div class="calendar-day"><span class="day-number">27</span></div>
+                    <div class="calendar-day has-event">
+                        <span class="day-number">28</span>
+                        <div class="day-event">Research Symposium</div>
+                    </div>
+                    
+                    <div class="calendar-day"><span class="day-number">29</span></div>
+                    <div class="calendar-day"><span class="day-number">30</span></div>
+                    <div class="calendar-day"><span class="day-number">31</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="section">
+            <h2 class="section-title">Platform Features</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/edit-calendar.png" alt="Event Registration" class="feature-icon" />
+                    <h3>Event Registration</h3>
+                    <p>Easy online registration for all events.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/trophy.png" alt="Prize Distribution" class="feature-icon" />
+                    <h3>Prize Distribution</h3>
+                    <p>Automated prize management for winners.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/calendar.png" alt="Event Scheduling" class="feature-icon" />
+                    <h3>Event Scheduling</h3>
+                    <p>Live calendar for all activities.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/combo-chart.png" alt="Analytics Dashboard" class="feature-icon" />
+                    <h3>Analytics Dashboard</h3>
+                    <p>Event performance analytics.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/appointment-reminders.png" alt="Notifications" class="feature-icon" />
+                    <h3>Real-time Notifications</h3>
+                    <p>Instant updates for participants.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/goal.png" alt="Multi-Category" class="feature-icon" />
+                    <h3>Multi-Category Events</h3>
+                    <p>Cultural, technical, sports, and academic events.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/team.png" alt="Team Management" class="feature-icon" />
+                    <h3>Team Management</h3>
+                    <p>Manage team competitions easily.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/medal.png" alt="Achievement Tracking" class="feature-icon" />
+                    <h3>Achievement Tracking</h3>
+                    <p>Digital certificates for participants.</p>
+                </div>
+                <!-- New Features -->
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/qr-code.png" alt="Automatic Attendance" class="feature-icon" />
+                    <h3>Automatic Attendance</h3>
+                    <p>Attendance via QR, Bluetooth, Wi-Fi, or face recognition.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/monitor.png" alt="Attendance Display" class="feature-icon" />
+                    <h3>Real-time Attendance Display</h3>
+                    <p>Live attendance status on screens.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/idea.png" alt="Suggestions" class="feature-icon" />
+                    <h3>Personalized Academic Suggestions</h3>
+                    <p>Academic tasks based on your interests and goals.</p>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/color/48/000000/planner.png" alt="Routine Generator" class="feature-icon" />
+                    <h3>Smart Daily Routine Generator</h3>
+                    <p>Daily schedule for classes, free time, and goals.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Aims Section -->
+        <section id="aims" class="section">
+            <h2 class="section-title">Our Aims & Objectives</h2>
+            <div class="aim-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>🎯 Primary Goal</h3>
+                        <p>To revolutionize college event management by providing a comprehensive digital platform that streamlines the entire process from registration to prize distribution.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>📈 Enhanced Participation</h3>
+                        <p>Increase student engagement and participation in college activities by making event discovery and registration more accessible and user-friendly.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>⚡ Efficiency Improvement</h3>
+                        <p>Reduce administrative burden on college staff by automating event management processes and providing real-time analytics.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>🏆 Fair Competition</h3>
+                        <p>Ensure transparent and fair competition management with automated judging systems and unbiased prize distribution mechanisms.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>🌐 Digital Transformation</h3>
+                        <p>Lead the digital transformation of college event management, creating a paperless and environmentally friendly solution.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-content">
+                        <h3>📚 Skill Development</h3>
+                        <p>Promote skill development and talent recognition among students through diverse competition categories and achievement tracking.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Author Section -->
+        <section id="about" class="section">
+            <h2 class="section-title">About the Author</h2>
+            <div class="card">
+                <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h3 style="color: #64ffda; margin-bottom: 1rem;">👨‍💻 Developer Profile</h3>
+                        <p style="margin-bottom: 1rem;"><strong>Name:</strong> Rudra Bhullar & Gourav Kushwah</p>
+                        <p style="margin-bottom: 1rem;"><strong>Role: </strong>Vibe coder</p>
+                        <p style="margin-bottom: 1rem;"><strong><Experienc></Experienc>e: </strong>1st Year CSE student in uit rgpv shivpuri</p>
+                        <p style="margin-bottom: 2rem;"><strong>Specialization:</strong> MERN Stack, Three.js, Tieing with AI</p>
+                        
+                        <h4 style="color: #64ffda; margin-bottom: 1rem;">🎓 Education</h4>
+                        <p style="margin-bottom: 1rem;">•Currently studying in UIT RGPV shivpuri </p>
+                        <p style="margin-bottom: 1rem;">•Complete high school from MPBSE</p>
+                        <p style="margin-bottom: 2rem;"></p>
+                        
+                        <h4 style="color: #64ffda; margin-bottom: 1rem;">💡 Vision</h4>
+                        <p>Passionate about creating innovative solutions that enhance student life and streamline educational processes. This project represents my commitment to bridging technology and education for a better tomorrow.</p>
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <h4 style="color: #64ffda; margin-bottom: 1rem;">🛠️ Technical Skills</h4>
+                        <div style="display: grid; gap: 0.5rem;">
+                            <div style="background: rgba(100, 255, 218, 0.1); padding: 0.5rem; border-radius: 5px;">Frontend: React.js, HTML5, CSS3, JavaScript ES6+</div>
+                            <div style="background: rgba(100, 255, 218, 0.1); padding: 0.5rem; border-radius: 5px;">Backend: Node.js, Express.js, MongoDB</div>
+                            <div style="background: rgba(100, 255, 218, 0.1); padding: 0.5rem; border-radius: 5px;">3D Graphics: Three.js, WebGL</div>
+                            <div style="background: rgba(100, 255, 218, 0.1); padding: 0.5rem; border-radius: 5px;">Design: Figma, Adobe Creative Suite</div>
+                            <div style="background: rgba(100, 255, 218, 0.1); padding: 0.5rem; border-radius: 5px;">Tools: Git, Docker, VS Code</div>
+                        </div>
+                        
+                        <!--<h4 style="color: #64ffda; margin: 2rem 0 1rem 0;">🏆 Achievements</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 0.5rem;">🥇 Best Web Application Award 2024</li>
+                            <li style="margin-bottom: 0.5rem;">🎯 Google Developer Expert Nominee</li>
+                            <li style="margin-bottom: 0.5rem;">📱 Featured in Tech Innovation Magazine</>
+                            <li style="margin-bottom: 0.5rem;">🌟 Open Source Contributor (50+ projects)</li>
+                        </ul>-->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <div class="contact-section">
+            <h2 style="color: #64ffda; margin-bottom: 2rem;">📞 Contact Information</h2>
+            <p style="margin-bottom: 2rem;">Get in touch with us for support, collaborations, or feedback about the FestHub platform.</p>
+            
+            <div class="contact-info">
+                <div class="contact-item">
+                    <h4>📧 Email</h4>
+                    <p>contact@festhub.edu</p>
+                    <p>support@festhub.edu</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h4>📱 Phone</h4>
+                    <p>+91 98765 43210</p>
+                    <p>+91 87654 32109</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h4>🏢 Office Address</h4>
+                    <p>FestHub Technologies</p>
+                    <p>123 Tech Park, Bhopal</p>
+                    <p>Madhya Pradesh 462001</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h4>🌐 Social Media</h4>
+                    <p>LinkedIn: /company/festhub</p>
+                    <p>Twitter: @festhub_official</p>
+                    <p>Instagram: @festhub.edu</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h4>⏰ Office Hours</h4>
+                    <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
+                    <p>Saturday: 10:00 AM - 4:00 PM</p>
+                    <p>Sunday: Closed</p>
+                </div>
+                
+                <div class="contact-item">
+                    <h4>🎓 Developer Contact</h4>
+                    <p>alex.johnson@festhub.edu</p>
+                    <p>GitHub: @alexjohnson-dev</p>
+                    <p>Portfolio: alexjohnson.dev</p>
+                </div>
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                <button class="btn">📧 Send Email</button>
+                <button class="btn">💬 Live Chat</button>
+                <button class="btn">📞 Schedule Call</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Background Animation
+        let scene, camera, renderer, particles;
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('threejs-canvas'),
+                alpha: true
+            });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Create particle system
+            const geometry = new THREE.BufferGeometry();
+            const particlesCount = 100;
+            const positions = new Float32Array(particlesCount * 3);
+            
+            for (let i = 0; i < particlesCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 10;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x64ffda,
+                size: 0.02,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+            
+            camera.position.z = 5;
+            
+            animate();
+        }
+        // Event tab switching
+        function showEventTab(tab) {
+            document.querySelectorAll('.event-tab').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            document.getElementById(tab + '-tab').style.display = 'grid';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            particles.rotation.x += 0.001;
+            particles.rotation.y += 0.002;
+            
+            renderer.render(scene, camera);
+        }
+
+        // Navigation functionality
+        function showSection(sectionName) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Update scroll progress
+            updateScrollProgress();
+        }
+
+        // Scroll progress indicator
+        function updateScrollProgress() {
+            const scrollTop = window.pageYOffset;
+            const docHeight = document.body.offsetHeight;
+            const winHeight = window.innerHeight;
+            const scrollPercent = scrollTop / (docHeight - winHeight);
+            const scrollPercentRounded = Math.round(scrollPercent * 100);
+            
+            document.querySelector('.scroll-progress').style.width = scrollPercentRounded + '%';
+        }
+
+        // Event listeners
+        window.addEventListener('scroll', updateScrollProgress);
+        window.addEventListener('resize', () => {
+            if (renderer && camera) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // Mobile navigation
+        document.querySelector('.mobile-nav').addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks.style.display === 'flex') {
+                navLinks.style.display = 'none';
+            } else {
+                navLinks.style.display = 'flex';
+                navLinks.style.flexDirection = 'column';
+                navLinks.style.position = 'absolute';
+                navLinks.style.top = '100%';
+                navLinks.style.left = '0';
+                navLinks.style.width = '100%';
+                navLinks.style.background = 'rgba(15, 15, 15, 0.95)';
+                navLinks.style.padding = '1rem';
+            }
+        });
+
+        // Button interactions
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple');
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // Add ripple effect styles
+        const rippleStyle = document.createElement('style');
+        rippleStyle.textContent = `
+            .btn {
+                position: relative;
+                overflow: hidden;
+            }
+            .ripple {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            }
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(rippleStyle);
+
+        // Smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Initialize Three.js when page loads
+        window.addEventListener('load', initThreeJS);
+
+        // Add loading animation
+        window.addEventListener('load', function() {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe cards for animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card, .event-card, .feature-item, .tab-card');
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'all 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>
